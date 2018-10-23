@@ -1,0 +1,146 @@
+#!/bin/sh
+
+# xrand-menu:	Manage a multiple monitor setup on i3-wm with a simple menu. Basically a dynamic menu for the xrandr configuration utility of Xorg.
+# Last Change:  23/10/2018
+# Author:  	Manuel Bajo Buenestado <lolobajo@gmail.com>
+# License:      MIT LICENSE
+
+
+PRIMARY=$(xrandr | grep -w  primary |  awk '{print $(1)}')
+
+
+
+function external {
+
+	EXTERNAL=$(xrandr | grep -w  connected | grep -v --extended-regexp  "connected\sprimary\s[0-9]" |  awk '{print $(1)}' | dmenu -i -p "Connected Outputs:") 
+
+}
+
+
+
+function disconnect {
+
+	xrandr --output $EXTERNAL --off
+
+	CONNECTED=$(xrandr | grep --extended-regexp  "connected\s(primary\s)?[0-9]")
+
+	if [ -z "$CONNECTED" ]
+	then
+        	xrandr --output $PRIMARY --auto
+	fi
+}
+
+
+
+function mirror {
+
+	xrandr --output "$EXTERNAL" --off
+	
+	RESOLUTION=$(xrandr | grep -P "(?<=connected\sprimary\s)[0-9]+x[0-9]+"|  awk '{print $(4)}')
+	
+	xrandr  --output "$EXTERNAL" --auto --same-as "$PRIMARY" --scale-from $RESOLUTION
+}
+
+
+
+function single_monitor {
+
+	xrandr --output $EXTERNAL --off
+
+	CONNECTED=$(xrandr | grep -P "connected(\sprimary)?\s[0-9]+x[0-9]+"|  awk '{print $(1)}' | head -n 1)
+
+	while [ -n "$CONNECTED" ]
+	do
+		xrandr --output $CONNECTED --off 
+		CONNECTED=$(xrandr | grep -P "connected(\sprimary)?\s[0-9]+x[0-9]+"|  awk '{print $(1)}' | head -n 1)
+	done
+
+	xrandr --output $EXTERNAL --primary --auto
+}
+
+
+
+function extend {
+
+	xrandr --output "$EXTERNAL" --off
+	xrandr --output "$PRIMARY" --primary --auto --output "$EXTERNAL"     --right-of "$PRIMARY" --auto
+}
+
+
+
+function wm {
+	if [ "$WM" == "i3" ]
+	then
+		i3-msg restart
+	fi
+}
+
+
+
+if [ "$XDG_CURRENT_DESKTOP" ] ; then
+        WM="${XDG_CURRENT_DESKTOP}"
+elif [ "$DESKTOP_SESSION" ]; then
+        WM="$DESKTOP_SESSION"
+elif [ -f "${HOME}/.xinitrc" ]; then
+        WM="$(tail -n 1 "${HOME}/.xinitrc" | cut -d ' ' -f 2)"
+fi
+
+
+ 
+CHOOSEN=$(echo -e "Connect monitor\nDisconnect external monitor" | dmenu  -i -p "xranr-menu")
+
+
+
+case "$CHOOSEN" in
+	"Connect monitor") 
+
+		external
+
+		if [ -z "$EXTERNAL" ]
+		then
+       			exit
+		fi
+		;;
+
+	"Disconnect external monitor")
+
+		external
+
+		if [ -z "$EXTERNAL" ]
+		then
+		        exit
+		fi
+
+		disconnect
+		wm
+		exit
+		;;
+
+	*) exit
+		;;
+
+esac
+
+
+
+CHOOSEN=$(echo -e "Mirror mode\nExtended mode\nSingle-monitor mode" | dmenu  -i -p "Choose a mode:")
+
+
+case "$CHOOSEN" in 
+	"Mirror mode") mirror 
+		;;
+
+	"Extended mode") extend
+		;;
+
+	"Single-monitor mode") single_monitor
+		;;
+
+	*) exit
+		;;
+
+esac
+
+
+wm
+
