@@ -62,8 +62,36 @@ function single_monitor {
 
 function extend {
 
+	POSITION=$(echo -e "Right\nLeft\nAbove\nBelow" | dmenu  -i -p "Position")
+	
 	xrandr --output "$EXTERNAL" --off
-	xrandr --output "$PRIMARY" --primary --auto --output "$EXTERNAL"     --right-of "$PRIMARY" --auto
+
+	case "$POSITION" in
+
+	        "Right")
+		       
+			xrandr --output "$PRIMARY" --primary --auto --output "$EXTERNAL"     --right-of "$PRIMARY" --auto
+	                ;;
+
+	        "Left") 
+			xrandr --output "$PRIMARY" --primary --auto --output "$EXTERNAL"     --left-of "$PRIMARY" --auto
+	                ;;
+		
+	        "Above") 
+			xrandr --output "$PRIMARY" --primary --auto --output "$EXTERNAL"     --above "$PRIMARY" --auto
+	                ;;
+		
+	        "Below") 
+			xrandr --output "$PRIMARY" --primary --auto --output "$EXTERNAL"     --below "$PRIMARY" --auto
+	                ;;
+		
+		*) exit
+			;;
+		
+	
+	esac
+
+	
 }
 
 
