@@ -12,7 +12,7 @@ PRIMARY=$(xrandr | grep -w  primary |  awk '{print $(1)}')
 
 function external {
 
-	EXTERNAL=$(xrandr | grep -w  connected | grep -v --extended-regexp  "connected\sprimary\s[0-9]" |  awk '{print $(1)}' | dmenu -i -p "Connected Outputs:") 
+	EXTERNAL=$(xrandr | grep -w  connected | grep -v --extended-regexp  "connected\sprimary\s[0-9]+x[0-9]+" |  awk '{print $(1)}' | dmenu -i -p "Connected Outputs:") 
 
 }
 
@@ -22,7 +22,7 @@ function disconnect {
 
 	xrandr --output $EXTERNAL --off
 
-	CONNECTED=$(xrandr | grep --extended-regexp  "connected\s(primary\s)?[0-9]")
+	CONNECTED=$(xrandr | grep --extended-regexp  "connected\s[0-9]+x[0-9]+")
 
 	if [ -z "$CONNECTED" ]
 	then
@@ -95,6 +95,17 @@ function extend {
 }
 
 
+function rotate {
+
+	CONNECTED=$(xrandr | grep --extended-regexp  "connected\s(primary\s)?[0-9]" | awk '{print $(1)}' | dmenu -i -p "Connected monitors:")
+	ROTATION=$(echo -e "left\nright\nnormal\ninverted" | dmenu -i -p "Rotation:")
+
+	xrandr --output "$CONNECTED" --rotate "$ROTATION" 
+	xrandr --output "$CONNECTED" --auto 
+
+}
+
+
 
 function wm {
 	if [ "$WM" == "i3" ]
@@ -115,7 +126,7 @@ fi
 
 
  
-CHOOSEN=$(echo -e "Connect monitor\nDisconnect external monitor" | dmenu  -i -p "xranr-menu")
+CHOOSEN=$(echo -e "Connect monitor\nDisconnect external monitor\nRotate screen" | dmenu  -i -p "xranr-menu")
 
 
 
@@ -140,6 +151,13 @@ case "$CHOOSEN" in
 		fi
 
 		disconnect
+		wm
+		exit
+		;;
+
+	"Rotate screen") 
+
+		rotate
 		wm
 		exit
 		;;
