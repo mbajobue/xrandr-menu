@@ -12,6 +12,14 @@ Just add the `xrandr-menu` script to your `PATH`.
 
 ## Features
 
-- Mirror mode
+1. Connect monitor in:
+
 - Extended mode
-- Sinlge-monitor mode
+
+- Mirror mode
+
+- Single-monitor mode
+
+2. Disconnect monitor
+
+3. Rotate screen
