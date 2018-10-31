@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # xrand-menu:	Manage a multiple monitor setup on xorg with dmenu.
-# Last Change:  31/10/2018
+# Last Change:  01/11/2018
 # Author:  	Manuel Bajo Buenestado <lolobajo@gmail.com>
 # License:      MIT LICENSE
 
@@ -9,18 +9,33 @@
 PRIMARY=$(xrandr | grep -w  primary |  awk '{print $(1)}')
 
 
+function choose_output {
 
-function external {
+	OUTPUTS=$(xrandr | grep -w  connected ) 
+	MESSAGE="Connected outputs"
 
-	EXTERNAL=$(xrandr | grep -w  connected | grep -v --extended-regexp  "connected\sprimary\s[0-9]+x[0-9]+" |  awk '{print $(1)}' | dmenu -i -p "Connected Outputs:") 
+	if [ "$1" == "-a" ] ||  [ "$2" == "-a" ]
+	then
+		OUTPUTS=$(echo "$OUTPUTS" | grep --extended-regexp "connected\s(primary\s)?[0-9]+x[0-9]+") 
+		MESSAGE="Active outputs"
+	fi
+
+	if [ "$1" == "-p" ] ||  [ "$2" == "-p" ]
+	then
+		OUTPUTS=$(echo "$OUTPUTS" | grep -v -w primary) 
+		MESSAGE="$MESSAGE (primary not listed)"
+	fi
+
+	OUTPUTS=$(echo "$OUTPUTS" | awk '{print $(1)}' | dmenu -i -p "$MESSAGE")
+
+	echo "$OUTPUTS"
 
 }
 
 
-
 function disconnect {
 
-	xrandr --output $EXTERNAL --off
+	xrandr --output $1 --off
 
 	CONNECTED=$(xrandr | grep --extended-regexp  "connected\s[0-9]+x[0-9]+")
 
@@ -34,18 +49,18 @@ function disconnect {
 
 function mirror {
 
-	xrandr --output "$EXTERNAL" --off
+	xrandr --output "$1" --off
 	
 	RESOLUTION=$(xrandr | grep -P "(?<=connected\sprimary\s)[0-9]+x[0-9]+"|  awk '{print $(4)}')
 	
-	xrandr  --output "$EXTERNAL" --auto --same-as "$PRIMARY" --scale-from $RESOLUTION
+	xrandr  --output "$1" --auto --same-as "$PRIMARY" --scale-from $RESOLUTION
 }
 
 
 
 function single_monitor {
 
-	xrandr --output $EXTERNAL --off
+	xrandr --output $1 --off
 
 	CONNECTED=$(xrandr | grep -P "connected(\sprimary)?\s[0-9]+x[0-9]+"|  awk '{print $(1)}' | head -n 1)
 
@@ -55,7 +70,7 @@ function single_monitor {
 		CONNECTED=$(xrandr | grep -P "connected(\sprimary)?\s[0-9]+x[0-9]+"|  awk '{print $(1)}' | head -n 1)
 	done
 
-	xrandr --output $EXTERNAL --primary --auto
+	xrandr --output $1 --primary --auto
 }
 
 
@@ -64,25 +79,25 @@ function extend {
 
 	POSITION=$(echo -e "Right\nLeft\nAbove\nBelow" | dmenu  -i -p "Position")
 	
-	xrandr --output "$EXTERNAL" --off
+	xrandr --output "$1" --off
 
 	case "$POSITION" in
 
 	        "Right")
 		       
-			xrandr --output "$PRIMARY" --primary --auto --output "$EXTERNAL"     --right-of "$PRIMARY" --auto
+			xrandr --output "$PRIMARY" --primary --auto --output "$1"     --right-of "$PRIMARY" --auto
 	                ;;
 
 	        "Left") 
-			xrandr --output "$PRIMARY" --primary --auto --output "$EXTERNAL"     --left-of "$PRIMARY" --auto
+			xrandr --output "$PRIMARY" --primary --auto --output "$1"     --left-of "$PRIMARY" --auto
 	                ;;
 		
 	        "Above") 
-			xrandr --output "$PRIMARY" --primary --auto --output "$EXTERNAL"     --above "$PRIMARY" --auto
+			xrandr --output "$PRIMARY" --primary --auto --output "$1"     --above "$PRIMARY" --auto
 	                ;;
 		
 	        "Below") 
-			xrandr --output "$PRIMARY" --primary --auto --output "$EXTERNAL"     --below "$PRIMARY" --auto
+			xrandr --output "$PRIMARY" --primary --auto --output "$1"     --below "$PRIMARY" --auto
 	                ;;
 		
 		*) exit
@@ -97,11 +112,10 @@ function extend {
 
 function rotate {
 
-	CONNECTED=$(xrandr | grep --extended-regexp  "connected\s(primary\s)?[0-9]" | awk '{print $(1)}' | dmenu -i -p "Connected monitors:")
 	ROTATION=$(echo -e "left\nright\nnormal\ninverted" | dmenu -i -p "Rotation:")
 
-	xrandr --output "$CONNECTED" --rotate "$ROTATION" 
-	xrandr --output "$CONNECTED" --auto 
+	xrandr --output "$1" --rotate "$ROTATION" 
+	xrandr --output "$1" --auto 
 
 }
 
@@ -133,34 +147,44 @@ fi
 case "$CHOOSEN" in
 	"Connect monitor") 
 
-		external
+		OUTPUT=$(choose_output -p)
 
-		if [ -z "$EXTERNAL" ]
+		if [ -z "$OUTPUT" ]
 		then
        			exit
 		fi
 		;;
 
+
 	"Disconnect external monitor")
 
-		EXTERNAL=$(xrandr | grep xrandr | grep -w  connected | grep --extended-regexp  "connected\s[0-9]+x[0-9]+"  |  awk '{print $(1)}' | dmenu -i -p "Connected Outputs:") 
+		OUTPUT=$(choose_output -a -p)
 
-		if [ -z "$EXTERNAL" ]
+		if [ -z "$OUTPUT" ]
 		then
 		        exit
 		fi
 
-		disconnect
+		disconnect "$OUTPUT"
 		wm
 		exit
 		;;
+
 
 	"Rotate screen") 
 
-		rotate
+		OUTPUT=$(choose_output -a)
+
+		if [ -z "$OUTPUT" ]
+		then
+		        exit
+		fi
+
+		rotate "$OUTPUT"
 		wm
 		exit
 		;;
+
 
 	*) exit
 		;;
@@ -173,13 +197,13 @@ CHOOSEN=$(echo -e "Mirror mode\nExtended mode\nSingle-monitor mode" | dmenu  -i 
 
 
 case "$CHOOSEN" in 
-	"Mirror mode") mirror 
+	"Mirror mode") mirror "$OUTPUT"
 		;;
 
-	"Extended mode") extend
+	"Extended mode") extend "$OUTPUT"
 		;;
 
-	"Single-monitor mode") single_monitor
+	"Single-monitor mode") single_monitor "$OUTPUT"
 		;;
 
 	*) exit
