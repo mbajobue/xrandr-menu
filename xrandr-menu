@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # xrand-menu:	Manage a multiple monitor setup on xorg with dmenu.
-# Last Change:  01/11/2018
+# Last Change:  18/11/2018
 # Author:  	Manuel Bajo Buenestado <lolobajo@gmail.com>
 # License:      MIT LICENSE
 
@@ -27,16 +27,24 @@ function choose_output {
 	fi
 
 	OUTPUTS=$(echo "$OUTPUTS" | awk '{print $(1)}' | dmenu -i -p "$MESSAGE")
-
 	echo "$OUTPUTS"
+}
 
+
+function change_res {
+
+	RES=$(xrandr | awk '/'"$1"'/{f=1;next} /[A-Z]/{f=0} f' |  awk '{print $(1)}' | dmenu -i -p "Choose resolution")
+
+	if [ -z "$RES" ]
+	then
+		xrandr --output "$1" --mode "$RES"
+	fi
 }
 
 
 function disconnect {
 
 	xrandr --output $1 --off
-
 	CONNECTED=$(xrandr | grep --extended-regexp  "connected\s[0-9]+x[0-9]+")
 
 	if [ -z "$CONNECTED" ]
@@ -50,9 +58,7 @@ function disconnect {
 function mirror {
 
 	xrandr --output "$1" --off
-	
 	RESOLUTION=$(xrandr | grep -P "(?<=connected\sprimary\s)[0-9]+x[0-9]+"|  awk '{print $(4)}')
-	
 	xrandr  --output "$1" --auto --same-as "$PRIMARY" --scale-from $RESOLUTION
 }
 
@@ -61,7 +67,6 @@ function mirror {
 function single_monitor {
 
 	xrandr --output $1 --off
-
 	CONNECTED=$(xrandr | grep -P "connected(\sprimary)?\s[0-9]+x[0-9]+"|  awk '{print $(1)}' | head -n 1)
 
 	while [ -n "$CONNECTED" ]
@@ -78,7 +83,6 @@ function single_monitor {
 function extend {
 
 	POSITION=$(echo -e "Right\nLeft\nAbove\nBelow" | dmenu  -i -p "Position")
-	
 	xrandr --output "$1" --off
 
 	case "$POSITION" in
@@ -102,11 +106,8 @@ function extend {
 		
 		*) exit
 			;;
-		
 	
 	esac
-
-	
 }
 
 
@@ -116,7 +117,6 @@ function rotate {
 
 	xrandr --output "$1" --rotate "$ROTATION" 
 	xrandr --output "$1" --auto 
-
 }
 
 
@@ -140,7 +140,7 @@ fi
 
 
  
-	CHOOSEN=$(echo -e "Connect monitor\nDisconnect external monitor\nRotate screen" | dmenu -l 3 -i -p "xranr-menu")
+CHOOSEN=$(echo -e "Connect monitor\nDisconnect external monitor\nRotate screen\nChange screen resolution" | dmenu -l 4 -i -p "xranr-menu")
 
 
 
@@ -181,6 +181,20 @@ case "$CHOOSEN" in
 		fi
 
 		rotate "$OUTPUT"
+		wm
+		exit
+		;;
+
+	"Change screen resolution") 
+
+		OUTPUT=$(choose_output -a)
+
+		if [ -z "$OUTPUT" ]
+		then
+		        exit
+		fi
+
+		change_res "$OUTPUT"
 		wm
 		exit
 		;;

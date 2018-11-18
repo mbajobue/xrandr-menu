@@ -23,3 +23,5 @@ Just add the `xrandr-menu` script to your `PATH`.
 2. Disconnect monitor
 
 3. Rotate screen
+
+4. Change screen resolution
