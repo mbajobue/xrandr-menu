@@ -2,6 +2,13 @@
 
 Manage a multiple monitor setup under Xorg with a simple menu. Basically a dynamic menu for the xrandr configuration utility of Xorg.
 
+
+## Options
+
+- `-f`: use this option if you manage your wallpaper using feh.
+
+- `-n`: use this option if you manage your wallpaper using nitrogen.
+
 ## Installation
 
 Just add the `xrandr-menu` script to your `PATH`.
