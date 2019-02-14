@@ -143,7 +143,6 @@ case "$CHOOSEN" in
 		fi
 
 		disconnect "$OUTPUT"
-		wm
 		exit
 		;;
 
@@ -158,7 +157,6 @@ case "$CHOOSEN" in
 		fi
 
 		rotate "$OUTPUT"
-		wm
 		exit
 		;;
 		
@@ -172,7 +170,6 @@ case "$CHOOSEN" in
 		fi
 
 		change_res "$OUTPUT"
-		wm
 		exit
 		;;
 
