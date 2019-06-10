@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # xrand-menu:	Manage a multiple monitor setup on xorg with dmenu.
 # Last Change:  28/01/2019
